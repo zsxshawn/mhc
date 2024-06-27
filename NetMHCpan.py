@@ -1,3 +1,4 @@
+import os
 import sys
 import pandas as pd
 import mhctools
@@ -15,6 +16,18 @@ alleles_file = sys.argv[3]
 print("Python version:", sys.version)
 print("Pandas version:", pd.__version__)
 print("mhctools version:", mhctools.__version__)
+
+# Check if files exist
+if not os.path.isfile(peptides_file):
+    print(f"Error: Peptides file '{peptides_file}' not found.")
+    sys.exit(1)
+
+if not os.path.isfile(alleles_file):
+    print(f"Error: Alleles file '{alleles_file}' not found.")
+    sys.exit(1)
+
+print(f"Peptides file found: {peptides_file}")
+print(f"Alleles file found: {alleles_file}")
 
 if tool == "NetMHCpan":
     try:
