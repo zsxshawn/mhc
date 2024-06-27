@@ -1,14 +1,16 @@
 import sys
 import pandas as pd
 import mhctools
-from mhctools import NetMHCpan, NetMHCIIpan
+from mhctools import NetMHCpan
 from mhcnames import normalize_allele_name
 
-if len(sys.argv) < 2:
-    print("Error: No tool specified. Please specify either 'NetMHCpan' or 'NetMHCIIpan'.")
+if len(sys.argv) < 4:
+    print("Error: Missing arguments. Usage: mhctools_script.py <tool> <peptides_file> <alleles_file>")
     sys.exit(1)
 
 tool = sys.argv[1]
+peptides_file = sys.argv[2]
+alleles_file = sys.argv[3]
 
 print("Python version:", sys.version)
 print("Pandas version:", pd.__version__)
@@ -16,18 +18,37 @@ print("mhctools version:", mhctools.__version__)
 
 if tool == "NetMHCpan":
     try:
-        pan_predictor = NetMHCpan(alleles=[normalize_allele_name("HLA-A*02:01")])
+        # Read alleles from file
+        with open(alleles_file, 'r') as f:
+            alleles = [normalize_allele_name(line.strip()) for line in f if not line.startswith("#") and line.strip()]
+
+        # Read peptides from file
+        protein_sequences = {}
+        with open(peptides_file, 'r') as f:
+            for line in f:
+                if not line.startswith("#") and line.strip():
+                    parts = line.strip().split()
+                    if len(parts) == 2:
+                        protein_sequences[parts[0]] = parts[1]
+
+        # Initialize NetMHCpan predictor
+        pan_predictor = NetMHCpan(alleles=alleles)
         print("NetMHCpan loaded successfully.")
+
+        # Predict binding
+        binding_predictions = pan_predictor.predict_subsequences(protein_sequences, peptide_lengths=[9])
+
+        # Convert predictions to DataFrame
+        df = binding_predictions.to_dataframe()
+
+        # Print strong binders
+        for binding_prediction in binding_predictions:
+            if binding_prediction.affinity < 100:
+                print("Strong binder: %s" % (binding_prediction,))
     except Exception as e:
-        print(f"Error loading NetMHCpan: {e}")
-elif tool == "NetMHCIIpan":
-    try:
-        ii_pan_predictor = NetMHCIIpan(alleles=[normalize_allele_name("HLA-DRB1*01:01")])
-        print("NetMHCIIpan loaded successfully.")
-    except Exception as e:
-        print(f"Error loading NetMHCIIpan: {e}")
+        print(f"Error running NetMHCpan: {e}")
 else:
-    print("Error: Invalid tool specified. Please specify either 'NetMHCpan' or 'NetMHCIIpan'.")
+    print("Error: Invalid tool specified. Please specify 'NetMHCpan'.")
     sys.exit(1)
 
 print("All modules imported successfully!")
