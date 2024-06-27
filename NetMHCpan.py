@@ -17,6 +17,17 @@ print("Python version:", sys.version)
 print("Pandas version:", pd.__version__)
 print("mhctools version:", mhctools.__version__)
 
+# Debug: Print current working directory and list files
+print("Current working directory:", os.getcwd())
+print("Contents of current working directory:", os.listdir(os.getcwd()))
+
+# Debug: Print contents of the directory where the files are expected
+peptides_dir = os.path.dirname(peptides_file)
+alleles_dir = os.path.dirname(alleles_file)
+
+print(f"Contents of the peptides directory ({peptides_dir}):", os.listdir(peptides_dir))
+print(f"Contents of the alleles directory ({alleles_dir}):", os.listdir(alleles_dir))
+
 # Check if files exist
 if not os.path.isfile(peptides_file):
     print(f"Error: Peptides file '{peptides_file}' not found.")
