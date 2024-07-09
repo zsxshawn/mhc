@@ -1,4 +1,9 @@
+import pandas as pd
 from mhctools import NetMHCpan
+
+# Set Pandas options to display the full DataFrame
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 # Run NetMHCpan for alleles HLA-A*01:01 and HLA-A*02:01
 predictor = NetMHCpan(alleles=["A*02:01", "hla-a0101"])
