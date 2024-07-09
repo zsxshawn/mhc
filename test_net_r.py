@@ -16,7 +16,7 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
         mhc_file_name = mhc_file.name
 
     # Run NetMHCpan
-    cmd = f"netMHCpan -f {mhc_file_name} -p {temp_file_name} -xls -xlsfile {output_file}"
+    cmd = f"netMHCpan -inptype 0 -a {mhc_file_name} -p {temp_file_name} -xls -xlsfile {output_file}"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     # Print the command and its output for debugging
