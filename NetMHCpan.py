@@ -43,7 +43,6 @@ def read_peptides(file_path):
     return protein_sequences
 
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
-    logger.info(f"Starting prediction with {tool}")
     if tool == "NetMHCpan":
         try:
             alleles_and_sequences = read_alleles_and_pseudo_sequences(alleles_file)
@@ -55,7 +54,9 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
                 program_name="netMHCpan",
                 process_limit=-1,
                 default_peptide_lengths=[9],
-                extra_flags=["-p"] + [f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items()]
+                additional_options={
+                    "-p": ",".join(f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items())
+                }
             )
             logger.info("NetMHCpan predictor initialized successfully")
             
