@@ -62,8 +62,24 @@ def run_netmhcpan(peptides_file, alleles_file, output_file):
     ]
     
     try:
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         logger.debug("NetMHCpan completed successfully")
+        logger.debug(f"NetMHCpan stdout: {result.stdout}")
+        if result.stderr:
+            logger.warning(f"NetMHCpan stderr: {result.stderr}")
+        
+        # Check if the output file exists
+        if os.path.exists(output_file):
+            logger.debug(f"Output file created successfully: {output_file}")
+        else:
+            logger.error(f"Output file not found: {output_file}")
+        
+        # Print contents of the output directory
+        output_dir = os.path.dirname(output_file)
+        logger.debug(f"Contents of output directory {output_dir}:")
+        for file in os.listdir(output_dir):
+            logger.debug(f"  {file}")
+    
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running NetMHCpan: {e}")
         logger.error(f"NetMHCpan stdout: {e.stdout}")
@@ -84,17 +100,22 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             
             run_netmhcpan(peptides_file, alleles_file, output_file)
             
-            logger.info(f"Predictions saved to {output_file}")
-            
-            # Read the output file and create a DataFrame
-            df = pd.read_csv(output_file, sep='\t', skiprows=1)
-            logger.debug(f"Created DataFrame with {len(df)} rows")
-            
-            return df
+            if os.path.exists(output_file):
+                logger.info(f"Predictions saved to {output_file}")
+                
+                # Read the output file and create a DataFrame
+                df = pd.read_csv(output_file, sep='\t', skiprows=1)
+                logger.debug(f"Created DataFrame with {len(df)} rows")
+                
+                return df
+            else:
+                logger.error(f"Output file not created: {output_file}")
+                return None
         
         except Exception as e:
             logger.error(f"Error running NetMHCpan: {e}")
             logger.exception("Exception details:")
+            return None
     else:
         logger.error("Error: Invalid tool specified. Please specify 'NetMHCpan'.")
         sys.exit(1)
