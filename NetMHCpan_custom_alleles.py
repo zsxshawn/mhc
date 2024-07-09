@@ -2,7 +2,7 @@ from mhctools import NetMHCpan
 import pandas as pd
 
 # Custom MHC sequence
-custom_mhc_sequences = """>USER_DEF
+custom_mhc_sequences = """>CUSTOM_HLA_A99_99
 MAVMAPRTLLLLLSGALALTQTWAGSHSMRYFFTSVSRPGRGEPRFIAVGYVDDTQFVRF
 DSDAASQRMEPRAPWIEQEGPEYWDGETRKVKAHSQTHRVDLGTLRGYYNQSEAGSHTVQ
 RMYGCDVGSDWRFLRGYHQYAYDGKDYIALKEDLRSWTAADMAAQTTKHKWEAAHVAEQL
@@ -20,7 +20,7 @@ protein_sequences = {
 
 # Create the predictor with the custom MHC sequence
 predictor = NetMHCpan(
-    alleles=["USER_DEF"],
+    alleles=["CUSTOM*HLA_A99_99"],
     custom_mhc_sequences=custom_mhc_sequences
 )
 
