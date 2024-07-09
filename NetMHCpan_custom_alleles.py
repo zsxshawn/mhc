@@ -1,5 +1,5 @@
-from mhctools import NetMHCpan4
-import os
+import subprocess
+import pandas as pd
 
 # Create a custom MHC sequence file
 custom_mhc_file = "custom_mhc.fasta"
@@ -10,29 +10,33 @@ MSAQRVGSLADGRTVEALHGAEGLRQSLPDC
 MSLQRVGSLADGRTVEALHGAEGLRQSLPDC
 """)
 
-# Initialize NetMHCpan predictor with the custom MHC file
-# Note: This step might not work if the library does not support custom MHC sequences directly
-predictor = NetMHCpan4(alleles=[custom_mhc_file])
+# Create a peptide sequence file
+peptide_file = "peptides.fasta"
+with open(peptide_file, "w") as f:
+    f.write(""">1L2Y
+NLYIQWLKDGGPSSGRPPPS
+>1L3Y
+ECDTINCERYNGQVCGGPGRGLCFCGKCRCHPGFEGSACQA
+""")
 
-# Define your protein sequences
-protein_sequences = {
-    "1L2Y": "NLYIQWLKDGGPSSGRPPPS",
-    "1L3Y": "ECDTINCERYNGQVCGGPGRGLCFCGKCRCHPGFEGSACQA"
-}
+# Run NetMHCpan with custom MHC sequences
+result_file = "netmhcpan_custom_predictions.csv"
+command = [
+    "netMHCpan",
+    "-f", peptide_file,
+    "-inptype", "1",
+    "-a", custom_mhc_file,
+    "-xls",
+    "-xlsfile", result_file
+]
 
-# Predict binding for subsequences of specified lengths
-binding_predictions = predictor.predict_subsequences(protein_sequences, peptide_lengths=[9])
+subprocess.run(command, check=True)
 
-# Flatten binding predictions into a Pandas DataFrame
-df = binding_predictions.to_dataframe()
-
-# Write the DataFrame to a CSV file
-df.to_csv("netmhcpan_custom_predictions.csv", index=False)
-
-# Print the DataFrame to the console
+# Read and print the result
+df = pd.read_csv(result_file, sep='\t')
 print(df)
 
 # Example: Print strong binders
-for binding_prediction in binding_predictions:
-    if binding_prediction.affinity < 100:
-        print("Strong binder: %s" % (binding_prediction,))
+strong_binders = df[df['Affinity(nM)'] < 100]
+print("Strong binders:")
+print(strong_binders)
