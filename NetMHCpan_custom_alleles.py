@@ -28,8 +28,10 @@ df = binding_predictions.to_dataframe()
 # Print the DataFrame
 print(df)
 
+# Save the DataFrame to a CSV file
+df.to_csv('netmhcpan_custom_predictions.csv', index=False)
+
 # Example: Print strong binders
 for binding_prediction in binding_predictions:
     if binding_prediction.affinity < 100:
         print("Strong binder: %s" % (binding_prediction,))
-
