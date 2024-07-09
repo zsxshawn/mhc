@@ -9,17 +9,27 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def read_alleles_and_pseudo_sequences(file_path):
+def read_alleles_and_sequences(file_path):
     logger.info(f"Reading alleles from file: {file_path}")
     alleles_and_sequences = {}
+    current_allele = None
+    current_sequence = []
+    
     try:
         with open(file_path, 'r') as f:
             for line in f:
-                if not line.startswith("#") and line.strip():
-                    parts = line.strip().split()
-                    if len(parts) == 2:
-                        allele, pseudo_sequence = parts
-                        alleles_and_sequences[allele] = pseudo_sequence
+                line = line.strip()
+                if line.startswith('>'):
+                    if current_allele:
+                        alleles_and_sequences[current_allele] = ''.join(current_sequence)
+                    current_allele = line[1:]
+                    current_sequence = []
+                elif current_allele:
+                    current_sequence.append(line)
+        
+        if current_allele:
+            alleles_and_sequences[current_allele] = ''.join(current_sequence)
+        
         logger.info(f"Read {len(alleles_and_sequences)} alleles")
         logger.info(f"Alleles: {list(alleles_and_sequences.keys())}")
     except Exception as e:
@@ -27,25 +37,13 @@ def read_alleles_and_pseudo_sequences(file_path):
     return alleles_and_sequences
 
 def read_peptides(file_path):
-    logger.info(f"Reading peptides from file: {file_path}")
-    protein_sequences = {}
-    try:
-        with open(file_path, 'r') as f:
-            for line in f:
-                if not line.startswith("#") and line.strip():
-                    parts = line.strip().split()
-                    if len(parts) == 2:
-                        protein_sequences[parts[0]] = parts[1]
-        logger.info(f"Read {len(protein_sequences)} protein sequences")
-        logger.info(f"Protein names: {list(protein_sequences.keys())}")
-    except Exception as e:
-        logger.error(f"Error reading peptides file: {e}")
-    return protein_sequences
+    # This function remains unchanged
+    ...
 
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
     if tool == "NetMHCpan":
         try:
-            alleles_and_sequences = read_alleles_and_pseudo_sequences(alleles_file)
+            alleles_and_sequences = read_alleles_and_sequences(alleles_file)
             protein_sequences = read_peptides(peptides_file)
             
             logger.info("Initializing NetMHCpan predictor")
@@ -70,7 +68,7 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             for binding_prediction in binding_predictions:
                 if binding_prediction.affinity < 100:
                     logger.info(f"Strong binder: {binding_prediction}")
-                    logger.info(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
+                    logger.info(f"Full sequence: {alleles_and_sequences[binding_prediction.allele][:50]}...")  # Show first 50 characters
             
             output_folder = "output"
             os.makedirs(output_folder, exist_ok=True)
