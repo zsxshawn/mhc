@@ -17,12 +17,9 @@ def read_alleles_and_pseudo_sequences(file_path):
             for line in f:
                 if not line.startswith("#") and line.strip():
                     parts = line.strip().split()
-                    allele = parts[0]
                     if len(parts) == 2:
-                        pseudo_sequence = parts[1]
+                        allele, pseudo_sequence = parts
                         alleles_and_sequences[allele] = pseudo_sequence
-                    else:
-                        alleles_and_sequences[allele] = None
         logger.info(f"Read {len(alleles_and_sequences)} alleles")
         logger.info(f"Alleles: {list(alleles_and_sequences.keys())}")
     except Exception as e:
@@ -58,7 +55,7 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
                 program_name="netMHCpan",
                 process_limit=-1,
                 default_peptide_lengths=[9],
-                extra_flags=["-p"] + [f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items() if seq]
+                extra_flags=["-p"] + [f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items()]
             )
             logger.info("NetMHCpan predictor initialized successfully")
             
@@ -72,8 +69,7 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             for binding_prediction in binding_predictions:
                 if binding_prediction.affinity < 100:
                     logger.info(f"Strong binder: {binding_prediction}")
-                    if alleles_and_sequences[binding_prediction.allele]:
-                        logger.info(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
+                    logger.info(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
             
             output_folder = "output"
             os.makedirs(output_folder, exist_ok=True)
