@@ -20,10 +20,10 @@ def run_netmhcpan(peptides_file, alleles_file, output_file):
     logger.debug("Running NetMHCpan")
     cmd = [
         "netMHCpan",
-        "-p", peptides_file,
-        "-a", "file://" + alleles_file,
+        "-p", os.path.abspath(peptides_file),
+        "-a", f"file://{os.path.abspath(alleles_file)}",
         "-xls",
-        "-xlsfile", output_file
+        "-xlsfile", os.path.abspath(output_file)
     ]
     
     logger.debug(f"Executing command: {' '.join(cmd)}")
@@ -60,7 +60,7 @@ def run_netmhcpan(peptides_file, alleles_file, output_file):
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
     if tool == "NetMHCpan":
         try:
-            output_folder = "output"
+            output_folder = os.path.abspath("output")
             os.makedirs(output_folder, exist_ok=True)
             
             if output_name:
@@ -68,6 +68,14 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             else:
                 now = datetime.now().strftime("%Y%m%d_%H%M%S")
                 output_file = os.path.join(output_folder, f"{now}_{tool}_predictions.xls")
+            
+            logger.debug(f"Output file will be: {output_file}")
+            
+            # Check write permissions
+            if os.access(output_folder, os.W_OK):
+                logger.debug(f"Have write permissions for {output_folder}")
+            else:
+                logger.error(f"No write permissions for {output_folder}")
             
             run_netmhcpan(peptides_file, alleles_file, output_file)
             
@@ -101,8 +109,8 @@ if __name__ == "__main__":
         sys.exit(1)
     
     tool = sys.argv[1]
-    peptides_file = sys.argv[2]
-    alleles_file = sys.argv[3]
+    peptides_file = os.path.abspath(sys.argv[2])
+    alleles_file = os.path.abspath(sys.argv[3])
     output_name = sys.argv[4] if len(sys.argv) > 4 else None
     
     logger.info(f"Arguments: tool={tool}, peptides_file={peptides_file}, alleles_file={alleles_file}, output_name={output_name}")
