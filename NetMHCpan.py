@@ -108,7 +108,7 @@ if __name__ == "__main__":
     
     logger.info(f"Arguments: tool={tool}, peptides_file={peptides_file}, alleles_file={alleles_file}, output_name={output_name}")
     logger.info(f"Python version: {sys.version}")
-    logger.info(f"mhctools version: {NetMHCpan41.__version__}")
+    logger.info(f"mhctools version: {mhctools.__version__}")
     
     result_df = predict_binding(tool, peptides_file, alleles_file, output_name)
     logger.info("Script completed")
