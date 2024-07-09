@@ -1,14 +1,18 @@
-from mhctools import NetMHCpan
+from mhctools import NetMHCpan4
+import os
 
-# Custom MHC sequences in FASTA format
-custom_mhc_sequences = """>MHC1
+# Create a custom MHC sequence file
+custom_mhc_file = "custom_mhc.fasta"
+with open(custom_mhc_file, "w") as f:
+    f.write(""">MHC1
 MSAQRVGSLADGRTVEALHGAEGLRQSLPDC
 >MHC2
 MSLQRVGSLADGRTVEALHGAEGLRQSLPDC
-"""
+""")
 
-# Initialize NetMHCpan predictor with custom MHC sequences
-predictor = NetMHCpan(custom_mhc_sequences=custom_mhc_sequences)
+# Initialize NetMHCpan predictor with the custom MHC file
+# Note: This step might not work if the library does not support custom MHC sequences directly
+predictor = NetMHCpan4(alleles=[custom_mhc_file])
 
 # Define your protein sequences
 protein_sequences = {
