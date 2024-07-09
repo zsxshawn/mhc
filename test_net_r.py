@@ -16,16 +16,27 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
         mhc_file_name = mhc_file.name
 
     # Run NetMHCpan
-    cmd = f"netMHCpan -inptype 1 -a {mhc_file_name} -p {temp_file_name} -xls -xlsfile {output_file}"
-    subprocess.run(cmd, shell=True, check=True)
+    cmd = f"netMHCpan -f {mhc_file_name} -p {temp_file_name} -xls -xlsfile {output_file}"
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    
+    # Print the command and its output for debugging
+    print(f"Command: {cmd}")
+    print("Standard Output:")
+    print(result.stdout)
+    print("Standard Error:")
+    print(result.stderr)
 
     # Remove temporary files
     os.unlink(temp_file_name)
     os.unlink(mhc_file_name)
 
     # Read and process the output
-    df = pd.read_csv(output_file, sep='\t', skiprows=1)
-    return df
+    if os.path.exists(output_file):
+        df = pd.read_csv(output_file, sep='\t', skiprows=1)
+        return df
+    else:
+        print(f"Error: Output file {output_file} was not created.")
+        return None
 
 # Example usage
 peptides = [
@@ -42,13 +53,7 @@ peptides = [
 output_file = "netmhcpan_results.xls"
 
 # Custom MHC sequence (B*070201)
-custom_mhc = """MLVMAPRTVLLLLSAALALTETWAGSHSMRYFYTSVSRPGRGEPRFISVGYVDDTQFVRF
-DSDAASPREEPRAPWIEQEGPEYWDRNTQIYKAQAQTDRESLRNLRGYYNQSEAGSHTLQ
-SMYGCDVGPDGRLLRGHDQYAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQR
-RAYLEGECVEWLRRYLENGKDKLERADPPKTHVTHHPISDHEATLRCWALGFYPAEITLT
-WQRDGEDQTQDTELVETRPAGDRTFQKWAAVVVPSGEEQRYTCHVQHEGLPKPLTLRWEP
-SSQSTVPIVGIVAGLAVLAVVVIGAVVAAVMCRRKSSGGKGGSYSQAACSDSAQGSDVSL
-TA"""
+custom_mhc = "MLVMAPRTVLLLLSAALALTETWAGSHSMRYFYTSVSRPGRGEPRFISVGYVDDTQFVRFDSDAASPREEPRAPWIEQEGPEYWDRNTQIYKAQAQTDRESLRNLRGYYNQSEAGSHTLQSMYGCDVGPDGRLLRGHDQYAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQRRAYLEGECVEWLRRYLENGKDKLERADPPKTHVTHHPISDHEATLRCWALGFYPAEITLTWQRDGEDQTQDTELVETRPAGDRTFQKWAAVVVPSGEEQRYTCHVQHEGLPKPLTLRWEPSSQSTVPIVGIVAGLAVLAVVVIGAVVAAVMCRRKSSGGKGGSYSQAACSDSAQGSDVSLTA"
 
 results = run_netmhcpan(peptides, output_file, mhc_sequence=custom_mhc)
 
