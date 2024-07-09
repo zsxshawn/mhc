@@ -1,9 +1,8 @@
 import os
 import sys
+import subprocess
 import pandas as pd
 from datetime import datetime
-import mhctools
-from mhctools import NetMHCpan41
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,51 +51,44 @@ def read_peptides(file_path):
         logger.error(f"Error reading peptides file: {e}")
     return protein_sequences
 
+def run_netmhcpan(peptides_file, alleles_file, output_file):
+    logger.debug("Running NetMHCpan")
+    cmd = [
+        "netMHCpan",
+        "-p", peptides_file,
+        "-a", "file://" + alleles_file,
+        "-xls",
+        "-xlsfile", output_file
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        logger.debug("NetMHCpan completed successfully")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error running NetMHCpan: {e}")
+        logger.error(f"NetMHCpan stdout: {e.stdout}")
+        logger.error(f"NetMHCpan stderr: {e.stderr}")
+        raise
+
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
     if tool == "NetMHCpan":
         try:
-            alleles_and_sequences = read_alleles_and_sequences(alleles_file)
-            protein_sequences = read_peptides(peptides_file)
-            
-            logger.debug("Initializing NetMHCpan predictor")
-            predictor = NetMHCpan41(
-                alleles=list(alleles_and_sequences.keys()),
-                program_name="netMHCpan",
-                process_limit=-1,
-                default_peptide_lengths=[9],
-                additional_options={
-                    "-p": ",".join(f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items())
-                }
-            )
-            logger.debug("NetMHCpan predictor initialized successfully")
-            
-            logger.debug("Starting prediction")
-            binding_predictions = predictor.predict_subsequences(protein_sequences)
-            logger.debug(f"Prediction complete. Found {len(binding_predictions)} predictions")
-            
-            df = binding_predictions.to_dataframe()
-            logger.debug(f"Created DataFrame with {len(df)} rows")
-            
-            strong_binders = 0
-            for binding_prediction in binding_predictions:
-                if binding_prediction.affinity < 100:
-                    strong_binders += 1
-                    logger.debug(f"Strong binder: {binding_prediction}")
-                    logger.debug(f"Full sequence: {alleles_and_sequences[binding_prediction.allele][:50]}...")
-            
-            logger.info(f"Found {strong_binders} strong binders")
-            
             output_folder = "output"
             os.makedirs(output_folder, exist_ok=True)
             
             if output_name:
-                output_file = os.path.join(output_folder, f"{output_name}.csv")
+                output_file = os.path.join(output_folder, f"{output_name}.xls")
             else:
                 now = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_file = os.path.join(output_folder, f"{now}_{tool}_predictions.csv")
+                output_file = os.path.join(output_folder, f"{now}_{tool}_predictions.xls")
             
-            df.to_csv(output_file, index=False)
+            run_netmhcpan(peptides_file, alleles_file, output_file)
+            
             logger.info(f"Predictions saved to {output_file}")
+            
+            # Read the output file and create a DataFrame
+            df = pd.read_csv(output_file, sep='\t', skiprows=1)
+            logger.debug(f"Created DataFrame with {len(df)} rows")
             
             return df
         
@@ -120,7 +112,6 @@ if __name__ == "__main__":
     
     logger.info(f"Arguments: tool={tool}, peptides_file={peptides_file}, alleles_file={alleles_file}, output_name={output_name}")
     logger.info(f"Python version: {sys.version}")
-    logger.info(f"mhctools version: {getattr(mhctools, '__version__', 'Unknown')}")
     
     result_df = predict_binding(tool, peptides_file, alleles_file, output_name)
     logger.info("Script completed")
