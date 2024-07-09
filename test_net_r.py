@@ -39,9 +39,13 @@ output_file = "netmhcpan_results.xls"
 
 results = run_netmhcpan(allele, peptides, output_file)
 
-# Print strong binders
-strong_binders = results[results['nM'] < 100]
-print("Strong binders:")
-print(strong_binders[['Peptide', 'nM', '%Rank']])
+# Print all results
+print("All results:")
+print(results)
+
+# Print strong binders (using %Rank_EL < 0.5 as the threshold for strong binders)
+strong_binders = results[results['%Rank_EL'] < 0.5]
+print("\nStrong binders:")
+print(strong_binders[['Peptide', 'Score_EL', '%Rank_EL']])
 
 print(f"\nAll results saved to {output_file}")
