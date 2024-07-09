@@ -5,43 +5,51 @@ from datetime import datetime
 from mhctools import NetMHCpan41
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def read_alleles_and_pseudo_sequences(file_path):
+    logger.info(f"Reading alleles from file: {file_path}")
     alleles_and_sequences = {}
-    with open(file_path, 'r') as f:
-        for line in f:
-            if not line.startswith("#") and line.strip():
-                parts = line.strip().split()
-                allele = parts[0]
-                if len(parts) == 2:
-                    pseudo_sequence = parts[1]
-                    alleles_and_sequences[allele] = pseudo_sequence
-                else:
-                    alleles_and_sequences[allele] = None
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                if not line.startswith("#") and line.strip():
+                    parts = line.strip().split()
+                    allele = parts[0]
+                    if len(parts) == 2:
+                        pseudo_sequence = parts[1]
+                        alleles_and_sequences[allele] = pseudo_sequence
+                    else:
+                        alleles_and_sequences[allele] = None
+        logger.info(f"Read {len(alleles_and_sequences)} alleles")
+        logger.info(f"Alleles: {list(alleles_and_sequences.keys())}")
+    except Exception as e:
+        logger.error(f"Error reading alleles file: {e}")
     return alleles_and_sequences
 
 def read_peptides(file_path):
+    logger.info(f"Reading peptides from file: {file_path}")
     protein_sequences = {}
-    with open(file_path, 'r') as f:
-        for line in f:
-            if not line.startswith("#") and line.strip():
-                parts = line.strip().split()
-                if len(parts) == 2:
-                    protein_sequences[parts[0]] = parts[1]
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                if not line.startswith("#") and line.strip():
+                    parts = line.strip().split()
+                    if len(parts) == 2:
+                        protein_sequences[parts[0]] = parts[1]
+        logger.info(f"Read {len(protein_sequences)} protein sequences")
+        logger.info(f"Protein names: {list(protein_sequences.keys())}")
+    except Exception as e:
+        logger.error(f"Error reading peptides file: {e}")
     return protein_sequences
 
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
+    logger.info(f"Starting prediction with {tool}")
     if tool == "NetMHCpan":
         try:
-            logger.info(f"Reading alleles from {alleles_file}")
             alleles_and_sequences = read_alleles_and_pseudo_sequences(alleles_file)
-            logger.info(f"Found {len(alleles_and_sequences)} alleles")
-            
-            logger.info(f"Reading peptides from {peptides_file}")
             protein_sequences = read_peptides(peptides_file)
-            logger.info(f"Found {len(protein_sequences)} peptide sequences")
             
             logger.info("Initializing NetMHCpan predictor")
             predictor = NetMHCpan41(
@@ -88,6 +96,7 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
         sys.exit(1)
 
 if __name__ == "__main__":
+    logger.info("Script started")
     if len(sys.argv) < 4:
         logger.error("Error: Missing arguments. Usage: NetMHCpan.py <tool> <peptides_file> <alleles_file> [output_name]")
         sys.exit(1)
@@ -97,8 +106,9 @@ if __name__ == "__main__":
     alleles_file = sys.argv[3]
     output_name = sys.argv[4] if len(sys.argv) > 4 else None
     
+    logger.info(f"Arguments: tool={tool}, peptides_file={peptides_file}, alleles_file={alleles_file}, output_name={output_name}")
     logger.info(f"Python version: {sys.version}")
-    logger.info(f"Using NetMHCpan 4.1 with standard and custom alleles")
+    logger.info(f"mhctools version: {NetMHCpan41.__version__}")
     
     result_df = predict_binding(tool, peptides_file, alleles_file, output_name)
-    logger.info(result_df)
+    logger.info("Script completed")
