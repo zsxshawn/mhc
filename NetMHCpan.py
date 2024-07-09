@@ -4,52 +4,17 @@ import subprocess
 import pandas as pd
 from datetime import datetime
 import logging
+import shutil
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def read_alleles_and_sequences(file_path):
-    logger.debug(f"Reading alleles from file: {file_path}")
-    alleles_and_sequences = {}
-    current_allele = None
-    current_sequence = []
-    
-    try:
-        with open(file_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('>'):
-                    if current_allele:
-                        alleles_and_sequences[current_allele] = ''.join(current_sequence)
-                    current_allele = line[1:]
-                    current_sequence = []
-                elif current_allele:
-                    current_sequence.append(line)
-        
-        if current_allele:
-            alleles_and_sequences[current_allele] = ''.join(current_sequence)
-        
-        logger.debug(f"Read {len(alleles_and_sequences)} alleles")
-        logger.debug(f"Alleles: {list(alleles_and_sequences.keys())}")
-    except Exception as e:
-        logger.error(f"Error reading alleles file: {e}")
-    return alleles_and_sequences
-
-def read_peptides(file_path):
-    logger.debug(f"Reading peptides from file: {file_path}")
-    protein_sequences = {}
-    try:
-        with open(file_path, 'r') as f:
-            for line in f:
-                if not line.startswith("#") and line.strip():
-                    parts = line.strip().split()
-                    if len(parts) == 2:
-                        protein_sequences[parts[0]] = parts[1]
-        logger.debug(f"Read {len(protein_sequences)} protein sequences")
-        logger.debug(f"Protein names: {list(protein_sequences.keys())}")
-    except Exception as e:
-        logger.error(f"Error reading peptides file: {e}")
-    return protein_sequences
+def check_netmhcpan_installation():
+    netmhcpan_path = shutil.which("netMHCpan")
+    if netmhcpan_path:
+        logger.info(f"NetMHCpan found at: {netmhcpan_path}")
+    else:
+        logger.error("NetMHCpan not found in PATH")
 
 def run_netmhcpan(peptides_file, alleles_file, output_file):
     logger.debug("Running NetMHCpan")
@@ -60,6 +25,8 @@ def run_netmhcpan(peptides_file, alleles_file, output_file):
         "-xls",
         "-xlsfile", output_file
     ]
+    
+    logger.debug(f"Executing command: {' '.join(cmd)}")
     
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
@@ -74,7 +41,11 @@ def run_netmhcpan(peptides_file, alleles_file, output_file):
         else:
             logger.error(f"Output file not found: {output_file}")
         
-        # Print contents of the output directory
+        # Print contents of the current directory and output directory
+        logger.debug(f"Contents of current directory:")
+        for file in os.listdir():
+            logger.debug(f"  {file}")
+        
         output_dir = os.path.dirname(output_file)
         logger.debug(f"Contents of output directory {output_dir}:")
         for file in os.listdir(output_dir):
@@ -122,6 +93,9 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
 
 if __name__ == "__main__":
     logger.info("Script started")
+    logger.info(f"Current working directory: {os.getcwd()}")
+    check_netmhcpan_installation()
+    
     if len(sys.argv) < 4:
         logger.error("Error: Missing arguments. Usage: NetMHCpan.py <tool> <peptides_file> <alleles_file> [output_name]")
         sys.exit(1)
