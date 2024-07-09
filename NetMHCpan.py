@@ -4,6 +4,7 @@ import pandas as pd
 import mhctools
 from mhctools import NetMHCpan
 from mhcnames import normalize_allele_name
+from datetime import datetime
 
 def read_alleles_and_pseudo_sequences(file_path):
     alleles_and_sequences = {}
@@ -29,7 +30,7 @@ def read_peptides(file_path):
                     protein_sequences[parts[0]] = parts[1]
     return protein_sequences
 
-def predict_binding(tool, peptides_file, alleles_file):
+def predict_binding(tool, peptides_file, alleles_file, output_name=None):
     if tool == "NetMHCpan":
         try:
             # Read alleles and pseudo sequences from file
@@ -55,6 +56,21 @@ def predict_binding(tool, peptides_file, alleles_file):
                     if alleles_and_sequences[binding_prediction.allele]:
                         print(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
             
+            # Create output folder if it doesn't exist
+            output_folder = "output"
+            os.makedirs(output_folder, exist_ok=True)
+            
+            # Generate output filename
+            if output_name:
+                output_file = os.path.join(output_folder, f"{output_name}.csv")
+            else:
+                now = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_file = os.path.join(output_folder, f"{now}_{tool}_predictions.csv")
+            
+            # Save the DataFrame to a CSV file
+            df.to_csv(output_file, index=False)
+            print(f"Predictions saved to {output_file}")
+            
             return df
         
         except Exception as e:
@@ -65,15 +81,16 @@ def predict_binding(tool, peptides_file, alleles_file):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Error: Missing arguments. Usage: NetMHCpan.py <tool> <peptides_file> <alleles_file>")
+        print("Error: Missing arguments. Usage: NetMHCpan.py <tool> <peptides_file> <alleles_file> [output_name]")
         sys.exit(1)
     
     tool = sys.argv[1]
     peptides_file = sys.argv[2]
     alleles_file = sys.argv[3]
+    output_name = sys.argv[4] if len(sys.argv) > 4 else None
     
     print("Python version:", sys.version)
     print("mhctools version:", mhctools.__version__)
     
-    result_df = predict_binding(tool, peptides_file, alleles_file)
+    result_df = predict_binding(tool, peptides_file, alleles_file, output_name)
     print(result_df)
