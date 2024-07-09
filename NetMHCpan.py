@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 from datetime import datetime
+import mhctools
 from mhctools import NetMHCpan41
 import logging
 
