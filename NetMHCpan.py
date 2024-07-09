@@ -6,11 +6,11 @@ import mhctools
 from mhctools import NetMHCpan41
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def read_alleles_and_sequences(file_path):
-    logger.info(f"Reading alleles from file: {file_path}")
+    logger.debug(f"Reading alleles from file: {file_path}")
     alleles_and_sequences = {}
     current_allele = None
     current_sequence = []
@@ -30,15 +30,27 @@ def read_alleles_and_sequences(file_path):
         if current_allele:
             alleles_and_sequences[current_allele] = ''.join(current_sequence)
         
-        logger.info(f"Read {len(alleles_and_sequences)} alleles")
-        logger.info(f"Alleles: {list(alleles_and_sequences.keys())}")
+        logger.debug(f"Read {len(alleles_and_sequences)} alleles")
+        logger.debug(f"Alleles: {list(alleles_and_sequences.keys())}")
     except Exception as e:
         logger.error(f"Error reading alleles file: {e}")
     return alleles_and_sequences
 
 def read_peptides(file_path):
-    # This function remains unchanged
-    ...
+    logger.debug(f"Reading peptides from file: {file_path}")
+    protein_sequences = {}
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                if not line.startswith("#") and line.strip():
+                    parts = line.strip().split()
+                    if len(parts) == 2:
+                        protein_sequences[parts[0]] = parts[1]
+        logger.debug(f"Read {len(protein_sequences)} protein sequences")
+        logger.debug(f"Protein names: {list(protein_sequences.keys())}")
+    except Exception as e:
+        logger.error(f"Error reading peptides file: {e}")
+    return protein_sequences
 
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
     if tool == "NetMHCpan":
@@ -46,7 +58,7 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             alleles_and_sequences = read_alleles_and_sequences(alleles_file)
             protein_sequences = read_peptides(peptides_file)
             
-            logger.info("Initializing NetMHCpan predictor")
+            logger.debug("Initializing NetMHCpan predictor")
             predictor = NetMHCpan41(
                 alleles=list(alleles_and_sequences.keys()),
                 program_name="netMHCpan",
@@ -56,19 +68,23 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
                     "-p": ",".join(f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items())
                 }
             )
-            logger.info("NetMHCpan predictor initialized successfully")
+            logger.debug("NetMHCpan predictor initialized successfully")
             
-            logger.info("Starting prediction")
+            logger.debug("Starting prediction")
             binding_predictions = predictor.predict_subsequences(protein_sequences)
-            logger.info(f"Prediction complete. Found {len(binding_predictions)} predictions")
+            logger.debug(f"Prediction complete. Found {len(binding_predictions)} predictions")
             
             df = binding_predictions.to_dataframe()
-            logger.info(f"Created DataFrame with {len(df)} rows")
+            logger.debug(f"Created DataFrame with {len(df)} rows")
             
+            strong_binders = 0
             for binding_prediction in binding_predictions:
                 if binding_prediction.affinity < 100:
-                    logger.info(f"Strong binder: {binding_prediction}")
-                    logger.info(f"Full sequence: {alleles_and_sequences[binding_prediction.allele][:50]}...")  # Show first 50 characters
+                    strong_binders += 1
+                    logger.debug(f"Strong binder: {binding_prediction}")
+                    logger.debug(f"Full sequence: {alleles_and_sequences[binding_prediction.allele][:50]}...")
+            
+            logger.info(f"Found {strong_binders} strong binders")
             
             output_folder = "output"
             os.makedirs(output_folder, exist_ok=True)
