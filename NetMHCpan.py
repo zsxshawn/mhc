@@ -35,51 +35,46 @@ def read_peptides(file_path):
 def predict_binding(tool, peptides_file, alleles_file, output_name=None):
     if tool == "NetMHCpan":
         try:
-            # Read alleles and pseudo sequences from file
+            logger.info(f"Reading alleles from {alleles_file}")
             alleles_and_sequences = read_alleles_and_pseudo_sequences(alleles_file)
+            logger.info(f"Found {len(alleles_and_sequences)} alleles")
             
-            # Read peptides from file
+            logger.info(f"Reading peptides from {peptides_file}")
             protein_sequences = read_peptides(peptides_file)
+            logger.info(f"Found {len(protein_sequences)} peptide sequences")
             
-            # Separate standard alleles and custom alleles with pseudo sequences
-            standard_alleles = [allele for allele, seq in alleles_and_sequences.items() if seq is None]
-            custom_alleles = [f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items() if seq is not None]
-            
-            # Initialize NetMHCpan 4.1 predictor with both standard and custom alleles
+            logger.info("Initializing NetMHCpan predictor")
             predictor = NetMHCpan41(
-                alleles=standard_alleles,
+                alleles=list(alleles_and_sequences.keys()),
                 program_name="netMHCpan",
                 process_limit=-1,
                 default_peptide_lengths=[9],
-                extra_flags=["-p"] + custom_alleles if custom_alleles else []
+                extra_flags=["-p"] + [f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items() if seq]
             )
-            logger.info("NetMHCpan 4.1 loaded successfully.")
+            logger.info("NetMHCpan predictor initialized successfully")
             
-            # Predict binding
+            logger.info("Starting prediction")
             binding_predictions = predictor.predict_subsequences(protein_sequences)
+            logger.info(f"Prediction complete. Found {len(binding_predictions)} predictions")
             
-            # Convert predictions to DataFrame
             df = binding_predictions.to_dataframe()
+            logger.info(f"Created DataFrame with {len(df)} rows")
             
-            # Print strong binders
             for binding_prediction in binding_predictions:
                 if binding_prediction.affinity < 100:
                     logger.info(f"Strong binder: {binding_prediction}")
                     if alleles_and_sequences[binding_prediction.allele]:
                         logger.info(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
             
-            # Create output folder if it doesn't exist
             output_folder = "output"
             os.makedirs(output_folder, exist_ok=True)
             
-            # Generate output filename
             if output_name:
                 output_file = os.path.join(output_folder, f"{output_name}.csv")
             else:
                 now = datetime.now().strftime("%Y%m%d_%H%M%S")
                 output_file = os.path.join(output_folder, f"{now}_{tool}_predictions.csv")
             
-            # Save the DataFrame to a CSV file
             df.to_csv(output_file, index=False)
             logger.info(f"Predictions saved to {output_file}")
             
@@ -87,6 +82,7 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
         
         except Exception as e:
             logger.error(f"Error running NetMHCpan: {e}")
+            logger.exception("Exception details:")
     else:
         logger.error("Error: Invalid tool specified. Please specify 'NetMHCpan'.")
         sys.exit(1)
