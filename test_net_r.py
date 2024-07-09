@@ -2,7 +2,7 @@ import subprocess
 import pandas as pd
 import tempfile
 import os
-
+#oo
 def run_netmhcpan(peptides, output_file, mhc_sequence):
     # Create a temporary file for peptides
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
@@ -37,7 +37,6 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
     else:
         print(f"Error: Output file {output_file} was not created.")
         return None
-
 # Example usage
 peptides = [
     "NLYIQWLKD",
