@@ -4,12 +4,11 @@ import tempfile
 import os
 
 def run_netmhcpan(peptides, output_file, mhc_sequence):
-    #rr
     # Create a temporary file for peptides
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
         for peptide in peptides:
             temp_file.write(f"{peptide}\n")
-        temp_file_name = temp_file.name
+        peptide_file_name = temp_file.name
 
     # Create a temporary file for MHC sequence
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as mhc_file:
@@ -17,7 +16,7 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
         mhc_file_name = mhc_file.name
 
     # Run NetMHCpan
-    cmd = f"netMHCpan -inptype 0 -a {mhc_file_name} -p {temp_file_name} -xls -xlsfile {output_file}"
+    cmd = f"netMHCpan -inptype 1 -f {mhc_file_name} -p {peptide_file_name} -xls -xlsfile {output_file}"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     # Print the command and its output for debugging
@@ -28,7 +27,7 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
     print(result.stderr)
 
     # Remove temporary files
-    os.unlink(temp_file_name)
+    os.unlink(peptide_file_name)
     os.unlink(mhc_file_name)
 
     # Read and process the output
