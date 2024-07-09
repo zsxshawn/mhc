@@ -43,9 +43,12 @@ results = run_netmhcpan(allele, peptides, output_file)
 print("All results:")
 print(results)
 
-# Print strong binders (using %Rank_EL < 0.5 as the threshold for strong binders)
-strong_binders = results[results['%Rank_EL'] < 0.5]
+# Print strong binders (using EL_Rank < 0.5 as the threshold for strong binders)
+strong_binders = results[results['EL_Rank'] < 0.5]
 print("\nStrong binders:")
-print(strong_binders[['Peptide', 'Score_EL', '%Rank_EL']])
+if not strong_binders.empty:
+    print(strong_binders[['Peptide', 'EL-score', 'EL_Rank']])
+else:
+    print("No strong binders found.")
 
 print(f"\nAll results saved to {output_file}")
