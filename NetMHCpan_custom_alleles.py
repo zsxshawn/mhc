@@ -1,54 +1,30 @@
-import subprocess
+from mhctools import NetMHCpan
 import pandas as pd
 
-# Create a custom MHC sequence file
-custom_mhc_file = "custom_mhc.fasta"
-with open(custom_mhc_file, "w") as f:
-    f.write(""">MHC1
+custom_mhc_sequences = """>MHC1
 MSAQRVGSLADGRTVEALHGAEGLRQSLPDC
 >MHC2
 MSLQRVGSLADGRTVEALHGAEGLRQSLPDC
-""")
-
-# Create a peptide sequence file
-peptide_file = "peptides.fasta"
-with open(peptide_file, "w") as f:
-    f.write(""">1L2Y
-NLYIQWLKDGGPSSGRPPPS
->1L3Y
-ECDTINCERYNGQVCGGPGRGLCFCGKCRCHPGFEGSACQA
-""")
-
-# Specify NetMHCpan output file
-result_file = "netmhcpan_custom_predictions.csv"
-
-# Create NetMHCpan command
-command = [
-    "netMHCpan",
-    "-f", peptide_file,
-    "-inptype", "1",
-    "-a", custom_mhc_file,
-    "-BA",  # Include Binding affinity prediction
-    "-xls",
-    "-xlsfile", result_file
-]
+"""
 
 # Run NetMHCpan with custom MHC sequences
-try:
-    subprocess.run(command, check=True)
-except subprocess.CalledProcessError as e:
-    print(f"Error running NetMHCpan: {e}")
-    exit(1)
+predictor = NetMHCpan(custom_mhc_sequences=custom_mhc_sequences)
 
-# Read and print the result
-try:
-    df = pd.read_csv(result_file, sep='\t')
-    print(df)
+# Define protein sequences
+protein_sequences = {
+    "1L2Y": "NLYIQWLKDGGPSSGRPPPS",
+    "1L3Y": "ECDTINCERYNGQVCGGPGRGLCFCGKCRCHPGFEGSACQA"
+}
 
-    # Example: Print strong binders
-    strong_binders = df[df['Affinity(nM)'] < 100]
-    print("Strong binders:")
-    print(strong_binders)
-except FileNotFoundError as e:
-    print(f"Error: {e}")
-    exit(1)
+# Predict binding for subsequences of specified lengths
+binding_predictions = predictor.predict_subsequences(protein_sequences, peptide_lengths=[9])
+
+# Flatten binding predictions into a Pandas DataFrame
+df = binding_predictions.to_dataframe()
+
+# Save the DataFrame to a CSV file
+result_file = 'netmhcpan_custom_predictions.csv'
+df.to_csv(result_file, sep='\t', index=False)
+
+# Print the DataFrame
+print(df)
