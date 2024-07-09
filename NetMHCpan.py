@@ -1,10 +1,12 @@
 import os
 import sys
 import pandas as pd
-import mhctools
-from mhctools import NetMHCpan
-from mhcnames import normalize_allele_name
 from datetime import datetime
+from mhctools import NetMHCpan41
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def read_alleles_and_pseudo_sequences(file_path):
     alleles_and_sequences = {}
@@ -12,7 +14,7 @@ def read_alleles_and_pseudo_sequences(file_path):
         for line in f:
             if not line.startswith("#") and line.strip():
                 parts = line.strip().split()
-                allele = normalize_allele_name(parts[0])
+                allele = parts[0]
                 if len(parts) == 2:
                     pseudo_sequence = parts[1]
                     alleles_and_sequences[allele] = pseudo_sequence
@@ -39,12 +41,22 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             # Read peptides from file
             protein_sequences = read_peptides(peptides_file)
             
-            # Initialize NetMHCpan predictor with alleles
-            pan_predictor = NetMHCpan(alleles=list(alleles_and_sequences.keys()))
-            print("NetMHCpan loaded successfully.")
+            # Separate standard alleles and custom alleles with pseudo sequences
+            standard_alleles = [allele for allele, seq in alleles_and_sequences.items() if seq is None]
+            custom_alleles = [f"{allele}:{seq}" for allele, seq in alleles_and_sequences.items() if seq is not None]
+            
+            # Initialize NetMHCpan 4.1 predictor with both standard and custom alleles
+            predictor = NetMHCpan41(
+                alleles=standard_alleles,
+                program_name="netMHCpan",
+                process_limit=-1,
+                default_peptide_lengths=[9],
+                extra_flags=["-p"] + custom_alleles if custom_alleles else []
+            )
+            logger.info("NetMHCpan 4.1 loaded successfully.")
             
             # Predict binding
-            binding_predictions = pan_predictor.predict_subsequences(protein_sequences, peptide_lengths=[9])
+            binding_predictions = predictor.predict_subsequences(protein_sequences)
             
             # Convert predictions to DataFrame
             df = binding_predictions.to_dataframe()
@@ -52,9 +64,9 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             # Print strong binders
             for binding_prediction in binding_predictions:
                 if binding_prediction.affinity < 100:
-                    print(f"Strong binder: {binding_prediction}")
+                    logger.info(f"Strong binder: {binding_prediction}")
                     if alleles_and_sequences[binding_prediction.allele]:
-                        print(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
+                        logger.info(f"Pseudo sequence: {alleles_and_sequences[binding_prediction.allele]}")
             
             # Create output folder if it doesn't exist
             output_folder = "output"
@@ -69,19 +81,19 @@ def predict_binding(tool, peptides_file, alleles_file, output_name=None):
             
             # Save the DataFrame to a CSV file
             df.to_csv(output_file, index=False)
-            print(f"Predictions saved to {output_file}")
+            logger.info(f"Predictions saved to {output_file}")
             
             return df
         
         except Exception as e:
-            print(f"Error running NetMHCpan: {e}")
+            logger.error(f"Error running NetMHCpan: {e}")
     else:
-        print("Error: Invalid tool specified. Please specify 'NetMHCpan'.")
+        logger.error("Error: Invalid tool specified. Please specify 'NetMHCpan'.")
         sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Error: Missing arguments. Usage: NetMHCpan.py <tool> <peptides_file> <alleles_file> [output_name]")
+        logger.error("Error: Missing arguments. Usage: NetMHCpan.py <tool> <peptides_file> <alleles_file> [output_name]")
         sys.exit(1)
     
     tool = sys.argv[1]
@@ -89,8 +101,8 @@ if __name__ == "__main__":
     alleles_file = sys.argv[3]
     output_name = sys.argv[4] if len(sys.argv) > 4 else None
     
-    print("Python version:", sys.version)
-    print("mhctools version:", mhctools.__version__)
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"Using NetMHCpan 4.1 with standard and custom alleles")
     
     result_df = predict_binding(tool, peptides_file, alleles_file, output_name)
-    print(result_df)
+    logger.info(result_df)
