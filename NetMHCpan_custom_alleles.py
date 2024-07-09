@@ -25,11 +25,11 @@ binding_predictions = predictor.predict_subsequences(protein_sequences, peptide_
 # Flatten binding predictions into a Pandas DataFrame
 df = binding_predictions.to_dataframe()
 
-# Print the DataFrame
-print(df)
+# Write the DataFrame to a CSV file
+df.to_csv("netmhcpan_custom_predictions.csv", index=False)
 
-# Save the DataFrame to a CSV file
-df.to_csv('netmhcpan_custom_predictions.csv', index=False)
+# Print the DataFrame to the console
+print(df)
 
 # Example: Print strong binders
 for binding_prediction in binding_predictions:
