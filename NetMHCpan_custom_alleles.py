@@ -1,15 +1,22 @@
 from mhctools import NetMHCpan
 import pandas as pd
 
-custom_mhc_sequences = """>MHC1
-MSAQRVGSLADGRTVEALHGAEGLRQSLPDC
->MHC2
-MSLQRVGSLADGRTVEALHGAEGLRQSLPDC
-"""
+# New custom MHC sequence
+custom_mhc_sequences = """>B*070201
+MLVMAPRTVLLLLSAALALTETWAGSHSMRYFYTSVSRPGRGEPRFISVGYVDDTQFVRF
+DSDAASPREEPRAPWIEQEGPEYWDRNTQIYKAQAQTDRESLRNLRGYYNQSEAGSHTLQ
+SMYGCDVGPDGRLLRGHDQYAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQR
+RAYLEGECVEWLRRYLENGKDKLERADPPKTHVTHHPISDHEATLRCWALGFYPAEITLT
+WQRDGEDQTQDTELVETRPAGDRTFQKWAAVVVPSGEEQRYTCHVQHEGLPKPLTLRWEP
+SSQSTVPIVGIVAGLAVLAVVVIGAVVAAVMCRRKSSGGKGGSYSQAACSDSAQGSDVSL
+TA"""
 
-# Run NetMHCpan for alleles HLA-A*01:01 and HLA-A*02:01 with custom MHC sequences
+# Debug: Print custom MHC sequences to ensure they are correctly set
+print("Custom MHC Sequences:\n", custom_mhc_sequences)
+
+# Use only the custom MHC sequence
 predictor = NetMHCpan(
-    alleles=["A*02:01", "hla-a0101"],
+    alleles=["Custom_B*070201"],
     custom_mhc_sequences=custom_mhc_sequences
 )
 
