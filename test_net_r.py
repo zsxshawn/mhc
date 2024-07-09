@@ -10,11 +10,13 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
             temp_file.write(f"{peptide}\n")
         peptide_file_name = temp_file.name
 
-    # Prepare MHC sequence (remove newlines and spaces)
-    mhc_sequence_cleaned = ''.join(mhc_sequence.split())
+    # Create a temporary file for MHC sequence
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as mhc_file:
+        mhc_file.write(f">Custom_MHC\n{mhc_sequence}\n")
+        mhc_file_name = mhc_file.name
 
     # Run NetMHCpan
-    cmd = f"netMHCpan -p {peptide_file_name} -xls -xlsfile {output_file} -sequence {mhc_sequence_cleaned}"
+    cmd = f"netMHCpan -p {peptide_file_name} -xls -xlsfile {output_file} -hlaseq {mhc_file_name}"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     # Print the command and its output for debugging
@@ -24,8 +26,9 @@ def run_netmhcpan(peptides, output_file, mhc_sequence):
     print("Standard Error:")
     print(result.stderr)
 
-    # Remove temporary file
+    # Remove temporary files
     os.unlink(peptide_file_name)
+    os.unlink(mhc_file_name)
 
     # Read and process the output
     if os.path.exists(output_file):
